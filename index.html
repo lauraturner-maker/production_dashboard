@@ -56,6 +56,50 @@
             gap: 20px;
         }
 
+        /* Controls Section */
+        .controls-section {
+            display: flex;
+            justify-content: space-between;
+            background-color: var(--white);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-label {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+        }
+
+        button {
+            background-color: var(--light-gray);
+            border: 1px solid #ccc;
+            color: var(--dark-blue);
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #e2e2e2;
+        }
+
+        button.active {
+            background-color: var(--light-blue);
+            color: var(--dark-blue);
+            border-color: var(--light-blue);
+        }
+
         /* Top KPI Row */
         .kpi-row {
             display: grid;
@@ -81,7 +125,7 @@
         }
 
         .kpi-title {
-            font-size: 1rem;
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: #555;
@@ -89,9 +133,10 @@
         }
 
         .kpi-value {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: bold;
             color: var(--dark-blue);
+            transition: opacity 0.3s;
         }
 
         .kpi-value.highlight {
@@ -104,6 +149,9 @@
             color: var(--success);
             font-weight: bold;
         }
+
+        .kpi-subtext.negative { color: var(--danger); }
+        .kpi-subtext.neutral { color: #666; }
 
         /* Charts Row */
         .charts-row {
@@ -142,6 +190,7 @@
             text-align: center;
             font-weight: bold;
             border-top: 4px solid var(--success);
+            transition: border-color 0.3s;
         }
 
         .station.warning { border-top-color: var(--warning); }
@@ -150,10 +199,9 @@
         .station-name { margin-bottom: 5px; font-size: 0.9rem; }
         .station-status { font-size: 0.8rem; color: #666; font-weight: normal; }
 
-        @media (max-width: 900px) {
-            .charts-row {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width: 1024px) {
+            .charts-row { grid-template-columns: 1fr; }
+            .controls-section { flex-direction: column; gap: 15px; align-items: flex-start; }
         }
     </style>
 </head>
@@ -162,7 +210,7 @@
     <header>
         <div>
             <h1>AutoPlant Production Metrics</h1>
-            <p style="color: var(--light-blue); margin-top: 5px;">Line 1 - Shift A</p>
+            <p style="color: var(--light-blue); margin-top: 5px;" id="header-subtitle">Viewing: Line 1 - Shift A</p>
         </div>
         <div class="timestamp" id="time-display">
             Live Feed: Updated Just Now
@@ -171,33 +219,51 @@
 
     <div class="dashboard-container">
         
+        <div class="controls-section">
+            <div class="control-group">
+                <span class="control-label">Assembly Line:</span>
+                <button class="btn line-btn active" onclick="updateData('line', 1, this)">Line 1</button>
+                <button class="btn line-btn" onclick="updateData('line', 2, this)">Line 2</button>
+            </div>
+            <div class="control-group">
+                <span class="control-label">Shift:</span>
+                <button class="btn shift-btn active" onclick="updateData('shift', 'A', this)">Shift A (Morning)</button>
+                <button class="btn shift-btn" onclick="updateData('shift', 'B', this)">Shift B (Night)</button>
+            </div>
+        </div>
+
         <div class="kpi-row">
             <div class="kpi-card accent">
                 <div class="kpi-title">Units Produced</div>
-                <div class="kpi-value highlight">342</div>
-                <div class="kpi-subtext">+12 Ahead of Target</div>
+                <div class="kpi-value highlight" id="kpi-units">342</div>
+                <div class="kpi-subtext" id="sub-units">+12 Ahead of Target</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">First Pass Yield (FPY)</div>
-                <div class="kpi-value">94.8%</div>
-                <div class="kpi-subtext" style="color: #666;">Target: 95.0%</div>
+                <div class="kpi-title">FPY (First Pass Yield)</div>
+                <div class="kpi-value" id="kpi-fpy">94.8%</div>
+                <div class="kpi-subtext neutral">Target: 95.0%</div>
             </div>
             <div class="kpi-card accent">
-                <div class="kpi-title">Defect Rate</div>
-                <div class="kpi-value highlight">1.2%</div>
-                <div class="kpi-subtext">↓ 0.3% from yesterday</div>
+                <div class="kpi-title">OEE</div>
+                <div class="kpi-value highlight" id="kpi-oee">88.5%</div>
+                <div class="kpi-subtext" id="sub-oee">Optimal</div>
             </div>
             <div class="kpi-card">
-                <div class="kpi-title">OEE</div>
-                <div class="kpi-value">88.5%</div>
-                <div class="kpi-subtext">Optimal</div>
+                <div class="kpi-title">MTBF</div>
+                <div class="kpi-value" id="kpi-mtbf">142h</div>
+                <div class="kpi-subtext neutral">Mean Time Btw Failures</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">MTTR</div>
+                <div class="kpi-value" id="kpi-mttr">45m</div>
+                <div class="kpi-subtext" id="sub-mttr">↓ 5m from last week</div>
             </div>
         </div>
 
         <div class="charts-row">
             <div class="chart-card">
                 <div class="chart-header">Hourly Production Volume</div>
-                <canvas id="productionChart" height="100"></canvas>
+                <canvas id="productionChart" height="90"></canvas>
             </div>
 
             <div class="chart-card">
@@ -208,112 +274,164 @@
 
         <div class="chart-card">
             <div class="chart-header">Live Assembly Stages Status</div>
-            <div class="line-status">
-                <div class="station">
-                    <div class="station-name">1. Stamping</div>
-                    <div class="station-status">Running - 100%</div>
+            <div class="line-status" id="station-container">
                 </div>
-                <div class="station">
-                    <div class="station-name">2. Welding (Body)</div>
-                    <div class="station-status">Running - 98%</div>
-                </div>
-                <div class="station warning">
-                    <div class="station-name">3. Paint Shop</div>
-                    <div class="station-status">Main. Warning - 82%</div>
-                </div>
-                <div class="station">
-                    <div class="station-name">4. Engine Install</div>
-                    <div class="station-status">Running - 100%</div>
-                </div>
-                <div class="station">
-                    <div class="station-name">5. Interior Trim</div>
-                    <div class="station-status">Running - 95%</div>
-                </div>
-                <div class="station danger">
-                    <div class="station-name">6. Final QA</div>
-                    <div class="station-status">Bottleneck - 60%</div>
-                </div>
-            </div>
         </div>
 
     </div>
 
     <script>
-        // Set up common colors based on the requested palette
+        // Palette setup
         const darkBlue = '#0b0d48';
         const lightBlue = '#39b4ff';
-        const lightGray = '#F3F3F3';
 
-        // 1. Hourly Production Bar Chart
-        const prodCtx = document.getElementById('productionChart').getContext('2d');
-        const productionChart = new Chart(prodCtx, {
-            type: 'bar',
-            data: {
-                labels: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
-                datasets: [
-                    {
-                        label: 'Actual Production',
-                        data: [42, 45, 48, 41, 50, 39, 44, 33], // 33 represents a partial current hour
-                        backgroundColor: lightBlue,
-                        borderRadius: 4
-                    },
-                    {
-                        label: 'Target',
-                        data: [45, 45, 45, 45, 45, 45, 45, 45],
-                        type: 'line',
-                        borderColor: darkBlue,
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        fill: false
-                    }
+        // --- Mock Data Scenarios ---
+        const dashboardData = {
+            '1-A': {
+                kpis: { units: '342', subUnits: '+12 Ahead of Target', subUnitsClass: '', fpy: '94.8%', oee: '88.5%', subOee: 'Optimal', subOeeClass: '', mtbf: '142h', mttr: '45m', subMttr: '↓ 5m from last week', subMttrClass: '' },
+                prodData: [42, 45, 48, 41, 50, 39, 44, 33],
+                defectData: [45, 25, 20, 10],
+                stations: [
+                    { name: '1. Stamping', status: 'Running - 100%', class: '' },
+                    { name: '2. Welding', status: 'Running - 98%', class: '' },
+                    { name: '3. Paint Shop', status: 'Main. Warning - 82%', class: 'warning' },
+                    { name: '4. Engine Install', status: 'Running - 100%', class: '' },
+                    { name: '5. Interior Trim', status: 'Running - 95%', class: '' },
+                    { name: '6. Final QA', status: 'Bottleneck - 60%', class: 'danger' }
                 ]
             },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        title: { display: true, text: 'Units' }
-                    }
-                },
-                plugins: {
-                    legend: { position: 'top' }
-                }
+            '1-B': {
+                kpis: { units: '290', subUnits: '-5 Behind Target', subUnitsClass: 'negative', fpy: '96.2%', oee: '82.1%', subOee: 'Slight Lag', subOeeClass: 'warning', mtbf: '150h', mttr: '52m', subMttr: '↑ 2m from last week', subMttrClass: 'negative' },
+                prodData: [38, 40, 39, 42, 35, 41, 30, 25],
+                defectData: [20, 40, 30, 10],
+                stations: [
+                    { name: '1. Stamping', status: 'Running - 95%', class: '' },
+                    { name: '2. Welding', status: 'Running - 99%', class: '' },
+                    { name: '3. Paint Shop', status: 'Running - 90%', class: '' },
+                    { name: '4. Engine Install', status: 'Minor Issue - 75%', class: 'warning' },
+                    { name: '5. Interior Trim', status: 'Running - 100%', class: '' },
+                    { name: '6. Final QA', status: 'Running - 95%', class: '' }
+                ]
+            },
+            '2-A': {
+                kpis: { units: '410', subUnits: '+25 Ahead of Target', subUnitsClass: '', fpy: '98.1%', oee: '94.2%', subOee: 'Peak Efficiency', subOeeClass: '', mtbf: '210h', mttr: '30m', subMttr: 'Optimal', subMttrClass: '' },
+                prodData: [50, 52, 55, 51, 54, 53, 50, 45],
+                defectData: [10, 15, 60, 15],
+                stations: [
+                    { name: '1. EV Battery Drop', status: 'Running - 100%', class: '' },
+                    { name: '2. Chassis Mate', status: 'Running - 100%', class: '' },
+                    { name: '3. Cab Install', status: 'Running - 98%', class: '' },
+                    { name: '4. Wiring Harness', status: 'Running - 99%', class: '' },
+                    { name: '5. Software Flash', status: 'Running - 100%', class: '' },
+                    { name: '6. Water Test', status: 'Running - 100%', class: '' }
+                ]
+            },
+            '2-B': {
+                kpis: { units: '120', subUnits: 'Line Down', subUnitsClass: 'negative', fpy: '88.0%', oee: '45.0%', subOee: 'Critical Failure', subOeeClass: 'negative', mtbf: '85h', mttr: '120m', subMttr: 'Awaiting Parts', subMttrClass: 'negative' },
+                prodData: [45, 48, 27, 0, 0, 0, 0, 0],
+                defectData: [5, 5, 80, 10], // Massive electrical spike causing shutdown
+                stations: [
+                    { name: '1. EV Battery Drop', status: 'Halted - 0%', class: 'danger' },
+                    { name: '2. Chassis Mate', status: 'Halted - 0%', class: 'danger' },
+                    { name: '3. Cab Install', status: 'Halted - 0%', class: 'danger' },
+                    { name: '4. Wiring Harness', status: 'Fault - 0%', class: 'danger' },
+                    { name: '5. Software Flash', status: 'Idle - 0%', class: 'warning' },
+                    { name: '6. Water Test', status: 'Idle - 0%', class: 'warning' }
+                ]
             }
+        };
+
+        // --- Initialization ---
+        let currentLine = 1;
+        let currentShift = 'A';
+
+        // Initialize Charts
+        const prodCtx = document.getElementById('productionChart').getContext('2d');
+        let productionChart = new Chart(prodCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Hr 1', 'Hr 2', 'Hr 3', 'Hr 4', 'Hr 5', 'Hr 6', 'Hr 7', 'Hr 8'],
+                datasets: [
+                    { label: 'Actual Production', data: [], backgroundColor: lightBlue, borderRadius: 4 },
+                    { label: 'Target', data: [45, 45, 45, 45, 45, 45, 45, 45], type: 'line', borderColor: darkBlue, borderWidth: 2, pointRadius: 0, fill: false }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
         });
 
-        // 2. Defect Breakdown Doughnut Chart
         const defectCtx = document.getElementById('defectChart').getContext('2d');
-        const defectChart = new Chart(defectCtx, {
+        let defectChart = new Chart(defectCtx, {
             type: 'doughnut',
             data: {
-                labels: ['Paint Blemishes', 'Panel Gap', 'Electrical', 'Interior Fit'],
-                datasets: [{
-                    data: [45, 25, 20, 10],
-                    backgroundColor: [
-                        darkBlue,
-                        lightBlue,
-                        '#85cbf9', // Lighter variation of accent
-                        '#d9e2ec'  // Grayish blue
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#ffffff'
-                }]
+                labels: ['Paint/Body', 'Mechanical', 'Electrical', 'Trim/Fit'],
+                datasets: [{ data: [], backgroundColor: [darkBlue, lightBlue, '#85cbf9', '#d9e2ec'], borderWidth: 2, borderColor: '#ffffff' }]
             },
-            options: {
-                responsive: true,
-                cutout: '70%',
-                plugins: {
-                    legend: { position: 'bottom' }
-                }
-            }
+            options: { responsive: true, cutout: '70%', plugins: { legend: { position: 'bottom' } } }
         });
 
-        // Dynamic timestamp for realism
+        // --- Update Functions ---
+        function updateData(type, val, btnElement) {
+            // Update UI Buttons
+            if (type === 'line') {
+                currentLine = val;
+                document.querySelectorAll('.line-btn').forEach(b => b.classList.remove('active'));
+            } else {
+                currentShift = val;
+                document.querySelectorAll('.shift-btn').forEach(b => b.classList.remove('active'));
+            }
+            btnElement.classList.add('active');
+            
+            // Update Header
+            document.getElementById('header-subtitle').innerText = `Viewing: Line ${currentLine} - Shift ${currentShift}`;
+
+            // Fetch simulated data
+            const key = `${currentLine}-${currentShift}`;
+            const data = dashboardData[key];
+
+            // 1. Update KPIs
+            document.getElementById('kpi-units').innerText = data.kpis.units;
+            document.getElementById('sub-units').innerText = data.kpis.subUnits;
+            document.getElementById('sub-units').className = `kpi-subtext ${data.kpis.subUnitsClass}`;
+            
+            document.getElementById('kpi-fpy').innerText = data.kpis.fpy;
+            
+            document.getElementById('kpi-oee').innerText = data.kpis.oee;
+            document.getElementById('sub-oee').innerText = data.kpis.subOee;
+            document.getElementById('sub-oee').className = `kpi-subtext ${data.kpis.subOeeClass}`;
+            
+            document.getElementById('kpi-mtbf').innerText = data.kpis.mtbf;
+            
+            document.getElementById('kpi-mttr').innerText = data.kpis.mttr;
+            document.getElementById('sub-mttr').innerText = data.kpis.subMttr;
+            document.getElementById('sub-mttr').className = `kpi-subtext ${data.kpis.subMttrClass}`;
+
+            // 2. Update Charts
+            productionChart.data.datasets[0].data = data.prodData;
+            productionChart.update();
+
+            defectChart.data.datasets[0].data = data.defectData;
+            defectChart.update();
+
+            // 3. Update Stations
+            const stationContainer = document.getElementById('station-container');
+            stationContainer.innerHTML = '';
+            data.stations.forEach(st => {
+                stationContainer.innerHTML += `
+                    <div class="station ${st.class}">
+                        <div class="station-name">${st.name}</div>
+                        <div class="station-status">${st.status}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // Clock
         setInterval(() => {
-            const now = new Date();
-            document.getElementById('time-display').innerText = `Live Feed: ${now.toLocaleTimeString()}`;
+            document.getElementById('time-display').innerText = `Live Feed: ${new Date().toLocaleTimeString()}`;
         }, 1000);
+
+        // Initial Load
+        updateData('line', 1, document.querySelector('.line-btn.active'));
     </script>
 </body>
 </html>
