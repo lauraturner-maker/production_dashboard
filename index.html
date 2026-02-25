@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production & Quality Command Center</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --dark-blue: #0b0d48;
+            --light-blue: #39b4ff;
+            --light-gray: #F3F3F3;
+            --white: #ffffff;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            color: var(--dark-blue);
+        }
+
+        header {
+            background-color: var(--dark-blue);
+            color: var(--light-gray);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 5px solid var(--light-blue);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .timestamp {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: grid;
+            gap: 20px;
+        }
+
+        /* Top KPI Row */
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .kpi-card {
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--dark-blue);
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-card.accent {
+            border-left-color: var(--light-blue);
+        }
+
+        .kpi-title {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--dark-blue);
+        }
+
+        .kpi-value.highlight {
+            color: var(--light-blue);
+        }
+
+        .kpi-subtext {
+            font-size: 0.85rem;
+            margin-top: 5px;
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* Charts Row */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-card {
+            background-color: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-header {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: var(--dark-blue);
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 10px;
+        }
+
+        /* Assembly Line Status */
+        .line-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .station {
+            background-color: var(--light-gray);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: bold;
+            border-top: 4px solid var(--success);
+        }
+
+        .station.warning { border-top-color: var(--warning); }
+        .station.danger { border-top-color: var(--danger); }
+
+        .station-name { margin-bottom: 5px; font-size: 0.9rem; }
+        .station-status { font-size: 0.8rem; color: #666; font-weight: normal; }
+
+        @media (max-width: 900px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>AutoPlant Production Metrics</h1>
+            <p style="color: var(--light-blue); margin-top: 5px;">Line 1 - Shift A</p>
+        </div>
+        <div class="timestamp" id="time-display">
+            Live Feed: Updated Just Now
+        </div>
+    </header>
+
+    <div class="dashboard-container">
+        
+        <div class="kpi-row">
+            <div class="kpi-card accent">
+                <div class="kpi-title">Units Produced</div>
+                <div class="kpi-value highlight">342</div>
+                <div class="kpi-subtext">+12 Ahead of Target</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">First Pass Yield (FPY)</div>
+                <div class="kpi-value">94.8%</div>
+                <div class="kpi-subtext" style="color: #666;">Target: 95.0%</div>
+            </div>
+            <div class="kpi-card accent">
+                <div class="kpi-title">Defect Rate</div>
+                <div class="kpi-value highlight">1.2%</div>
+                <div class="kpi-subtext">↓ 0.3% from yesterday</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">OEE</div>
+                <div class="kpi-value">88.5%</div>
+                <div class="kpi-subtext">Optimal</div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card">
+                <div class="chart-header">Hourly Production Volume</div>
+                <canvas id="productionChart" height="100"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">Quality Issues Breakdown</div>
+                <canvas id="defectChart" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <div class="chart-header">Live Assembly Stages Status</div>
+            <div class="line-status">
+                <div class="station">
+                    <div class="station-name">1. Stamping</div>
+                    <div class="station-status">Running - 100%</div>
+                </div>
+                <div class="station">
+                    <div class="station-name">2. Welding (Body)</div>
+                    <div class="station-status">Running - 98%</div>
+                </div>
+                <div class="station warning">
+                    <div class="station-name">3. Paint Shop</div>
+                    <div class="station-status">Main. Warning - 82%</div>
+                </div>
+                <div class="station">
+                    <div class="station-name">4. Engine Install</div>
+                    <div class="station-status">Running - 100%</div>
+                </div>
+                <div class="station">
+                    <div class="station-name">5. Interior Trim</div>
+                    <div class="station-status">Running - 95%</div>
+                </div>
+                <div class="station danger">
+                    <div class="station-name">6. Final QA</div>
+                    <div class="station-status">Bottleneck - 60%</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Set up common colors based on the requested palette
+        const darkBlue = '#0b0d48';
+        const lightBlue = '#39b4ff';
+        const lightGray = '#F3F3F3';
+
+        // 1. Hourly Production Bar Chart
+        const prodCtx = document.getElementById('productionChart').getContext('2d');
+        const productionChart = new Chart(prodCtx, {
+            type: 'bar',
+            data: {
+                labels: ['06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00'],
+                datasets: [
+                    {
+                        label: 'Actual Production',
+                        data: [42, 45, 48, 41, 50, 39, 44, 33], // 33 represents a partial current hour
+                        backgroundColor: lightBlue,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Target',
+                        data: [45, 45, 45, 45, 45, 45, 45, 45],
+                        type: 'line',
+                        borderColor: darkBlue,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Units' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+
+        // 2. Defect Breakdown Doughnut Chart
+        const defectCtx = document.getElementById('defectChart').getContext('2d');
+        const defectChart = new Chart(defectCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Paint Blemishes', 'Panel Gap', 'Electrical', 'Interior Fit'],
+                datasets: [{
+                    data: [45, 25, 20, 10],
+                    backgroundColor: [
+                        darkBlue,
+                        lightBlue,
+                        '#85cbf9', // Lighter variation of accent
+                        '#d9e2ec'  // Grayish blue
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '70%',
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Dynamic timestamp for realism
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('time-display').innerText = `Live Feed: ${now.toLocaleTimeString()}`;
+        }, 1000);
+    </script>
+</body>
+</html>
